@@ -5,7 +5,7 @@
 #include <time.h>
 
 // threshold in milliseconds for direction change
-#define THRESH_MS 20
+#define THRESH_MS 1000
 
 static inline long long time_ms(){
 	struct timespec ts;
@@ -13,7 +13,7 @@ static inline long long time_ms(){
 	return (ts.tv_sec * 1000LL) + (ts.tv_nsec / 1000000LL);
 }
 
-inline void event_write(const struct input_event *event) {
+static inline void event_write(const struct input_event *event) {
 	if (fwrite(event, sizeof(struct input_event), 1, stdout) != 1)
 		exit(EXIT_FAILURE);
 }
@@ -28,10 +28,12 @@ int main(void) {
 			event_write(&ev);
 			continue;
 		}
-		if ((ev.value < 0) != prev_dir && time_ms() < qTime)
+		const long long t = time_ms();
+		const int d = ev.value < 0;
+		if (d != prev_dir && t < qTime)
 			continue;
-		prev_dir = ev.value < 0;
-		qTime = time_ms() + THRESH_MS;
+		prev_dir = d;
+		qTime = t + THRESH_MS;
 		event_write(&ev);
 	}
 	fprintf(stderr, "stdin got EOF. Bye Bye\n");
